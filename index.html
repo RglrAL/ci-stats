@@ -619,7 +619,7 @@
     border: 1px solid var(--rule);
     border-radius: 4px;
     overflow: auto;
-    max-height: 520px;
+    max-height: 340px;
   }
   table.dd-table {
     width: 100%;
@@ -692,6 +692,21 @@
     color: var(--ink-faint);
     font-style: italic;
   }
+
+  /* Drill-down summary banner */
+  .dd-summary-banner {
+    margin-top: 14px;
+    padding: 14px 18px;
+    background: #fff8e7;
+    border: 1px solid #e8d8a8;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .dd-summary-banner strong { font-weight: 600; }
+  .dd-summary-banner .delta-down { color: var(--accent); font-weight: 600; }
+  .dd-summary-banner .delta-up { color: var(--positive); font-weight: 600; }
 
   /* Drill-down mini chart */
   .dd-mini-chart {
@@ -1031,6 +1046,7 @@
     <div class="dd-table-wrap">
       <table class="dd-table" id="dd-table"></table>
     </div>
+    <div class="dd-summary-banner" id="dd-summary-banner" style="display:none;"></div>
 
     <div class="dd-mini-chart" id="dd-mini-chart" style="display:none;">
       <div class="dd-mini-head">
@@ -2067,13 +2083,23 @@ function renderDrillMonthSelectors() {
     state.dd.month = months[months.length - 1];
   }
   monthSel.value = state.dd.month;
-  // Auto-populate compare with prior year if available
-  if (state.dd.compareMonth && months.includes(state.dd.compareMonth)) {
-    cmpSel.value = state.dd.compareMonth;
-  } else {
-    const py = priorYearKey(state.dd.month);
-    if (months.includes(py)) { state.dd.compareMonth = py; cmpSel.value = py; }
+  // Auto-populate compare ONLY with prior year same month (semantically meaningful)
+  // Otherwise leave blank — don't pick an arbitrary month
+  if (state.dd.compareMonth !== undefined) {
+    // Validate existing compareMonth selection
+    if (state.dd.compareMonth && !months.includes(state.dd.compareMonth)) {
+      state.dd.compareMonth = '';
+    }
   }
+  if (!state.dd.compareMonth) {
+    const py = priorYearKey(state.dd.month);
+    if (months.includes(py)) {
+      state.dd.compareMonth = py;
+    } else {
+      state.dd.compareMonth = '';
+    }
+  }
+  cmpSel.value = state.dd.compareMonth;
 }
 function renderCoverage() {
   const cov = document.getElementById('dd-coverage');
@@ -2104,9 +2130,11 @@ function renderDrillTable() {
     const cmp = cmpMap[r.k];
     if (cmp && cmp.c > 0) {
       r._change = (r.c - cmp.c) / cmp.c * 100;
+      r._absChange = r.c - cmp.c;  // absolute clicks delta
       r._cmpClicks = cmp.c;
     } else {
       r._change = null;
+      r._absChange = null;
       r._cmpClicks = null;
     }
     r._ctr = r.i > 0 ? r.c / r.i * 100 : 0;
@@ -2122,20 +2150,24 @@ function renderDrillTable() {
     if (!state.dd.compareMonth) {
       rows = [];
     } else {
-      rows = rows.filter(r => r._change != null && (r.c >= 50 || (r._cmpClicks || 0) >= 50));
+      // Floor: either current or prior had ≥100 clicks (filters out noise)
+      rows = rows.filter(r => r._absChange != null && (r.c >= 100 || (r._cmpClicks || 0) >= 100));
     }
   }
 
   // Sort
   const dir = state.dd.sortDir === 'asc' ? 1 : -1;
-  const sortKey = state.dd.view === 'movers' ? 'change' : state.dd.sortKey;
+  let sortKey = state.dd.view === 'movers' && state.dd.sortKey === 'c' ? 'absChange' : state.dd.sortKey;
   rows.sort((a, b) => {
     let av, bv;
-    if (sortKey === 'change') { av = a._change ?? -Infinity; bv = b._change ?? -Infinity; }
+    if (sortKey === 'change') { av = a._change ?? 0; bv = b._change ?? 0; }
+    else if (sortKey === 'absChange') { av = a._absChange ?? 0; bv = b._absChange ?? 0; }
     else if (sortKey === 'ctr') { av = a._ctr; bv = b._ctr; }
     else { av = a[sortKey] ?? 0; bv = b[sortKey] ?? 0; }
-    // movers always sorts by change ascending (biggest drops first) unless user overrides
-    if (state.dd.view === 'movers' && state.dd.sortKey !== 'change') return av - bv;
+    // movers default: biggest drops first (most negative absChange)
+    if (state.dd.view === 'movers' && sortKey === 'absChange' && state.dd.sortDir === 'desc') {
+      return av - bv; // ascending so most negative is first
+    }
     return (av - bv) * dir;
   });
 
@@ -2146,7 +2178,7 @@ function renderDrillTable() {
     `<th class="sortable ${sortKey==='i' ? 'sorted-'+state.dd.sortDir : ''}" data-sort="i">Impressions</th>` +
     `<th class="sortable ${sortKey==='ctr' ? 'sorted-'+state.dd.sortDir : ''}" data-sort="ctr">CTR</th>` +
     `<th class="sortable ${sortKey==='p' ? 'sorted-'+state.dd.sortDir : ''}" data-sort="p">Avg position</th>` +
-    (state.dd.compareMonth ? `<th class="sortable ${sortKey==='change' ? 'sorted-'+state.dd.sortDir : ''}" data-sort="change">Clicks vs ${formatMonthLabelCompact(state.dd.compareMonth)}</th>` : '') +
+    (state.dd.compareMonth ? `<th class="sortable ${sortKey==='absChange' || sortKey==='change' ? 'sorted-'+state.dd.sortDir : ''}" data-sort="absChange">Click change vs ${formatMonthLabelCompact(state.dd.compareMonth)}</th>` : '') +
     '</tr></thead>';
 
   let tbody = '<tbody>';
@@ -2165,7 +2197,8 @@ function renderDrillTable() {
       if (state.dd.compareMonth) {
         if (r._change != null) {
           const cls = r._change < -2 ? 'down' : r._change > 2 ? 'up' : 'flat';
-          changeCell = `<td class="change-cell ${cls}">${fmt.signed(r._change)} <span style="color:#9a9a9a;font-size:11px;">(${fmt.full(r._cmpClicks)})</span></td>`;
+          const absSign = r._absChange >= 0 ? '+' : '';
+          changeCell = `<td class="change-cell ${cls}">${absSign}${fmt.full(r._absChange)} <span style="color:#9a9a9a;font-size:11px;">(${fmt.signed(r._change)})</span></td>`;
         } else {
           changeCell = `<td class="change-cell flat">— <span style="color:#9a9a9a;font-size:11px;">(new)</span></td>`;
         }
@@ -2206,12 +2239,83 @@ function renderDrillTable() {
   tbl.querySelectorAll('tbody tr[data-item]').forEach(tr => {
     tr.addEventListener('click', () => {
       const item = decodeURIComponent(tr.dataset.item);
-      state.dd.selectedItem = state.dd.selectedItem === item ? null : item;
+      const wasSelected = state.dd.selectedItem === item;
+      state.dd.selectedItem = wasSelected ? null : item;
       saveState();
       renderDrillTable();
       renderMiniChart();
+      // Scroll the mini chart into view if it just appeared
+      if (!wasSelected && state.dd.selectedItem) {
+        setTimeout(() => {
+          const chartEl = document.getElementById('dd-mini-chart');
+          if (chartEl && chartEl.style.display !== 'none') {
+            chartEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 80);
+      }
     });
   });
+}
+
+function renderDrillSummary() {
+  const banner = document.getElementById('dd-summary-banner');
+  if (!banner) return;
+  if (!state.dd.month || !state.dd.compareMonth) { banner.style.display = 'none'; return; }
+  const currentRows = drillData()[state.dd.month] || [];
+  const cmpRows = drillData()[state.dd.compareMonth] || [];
+  if (!currentRows.length || !cmpRows.length) { banner.style.display = 'none'; return; }
+
+  const cmpMap = {};
+  cmpRows.forEach(r => { cmpMap[r.k] = r; });
+  const currentMap = {};
+  currentRows.forEach(r => { currentMap[r.k] = r; });
+
+  // Total click delta across overlapping items
+  const allKeys = new Set([...currentRows.map(r=>r.k), ...cmpRows.map(r=>r.k)]);
+  let totalCurrent = 0, totalCmp = 0;
+  allKeys.forEach(k => {
+    totalCurrent += currentMap[k]?.c || 0;
+    totalCmp += cmpMap[k]?.c || 0;
+  });
+  const delta = totalCurrent - totalCmp;
+  const pct = totalCmp > 0 ? (delta / totalCmp * 100) : 0;
+
+  // Find top 3 losers (biggest absolute click drops)
+  const movers = [];
+  allKeys.forEach(k => {
+    const cur = currentMap[k]?.c || 0;
+    const cmp = cmpMap[k]?.c || 0;
+    if (cmp >= 100 || cur >= 100) {
+      movers.push({ k, delta: cur - cmp });
+    }
+  });
+  movers.sort((a,b) => a.delta - b.delta);
+  const topLosers = movers.slice(0, 3);
+  const topGainers = movers.slice(-3).reverse();
+
+  const typeLabel = state.dd.type === 'queries' ? 'queries' : 'pages';
+  const deltaClass = delta < 0 ? 'delta-down' : 'delta-up';
+  const deltaSign = delta >= 0 ? '+' : '';
+  const isUrl = state.dd.type === 'pages';
+  const fmtItem = (k) => {
+    const display = isUrl && k.startsWith('/') ? k : k;
+    return `<strong>${display.length > 60 ? display.slice(0, 60) + '…' : display}</strong>`;
+  };
+
+  let html = `<strong>${formatMonthLabel(state.dd.month)}</strong> vs <strong>${formatMonthLabel(state.dd.compareMonth)}</strong> · total clicks across top ${typeLabel}: <span class="${deltaClass}">${deltaSign}${fmt.full(delta)} (${fmt.signed(pct)})</span>`;
+
+  if (delta < 0 && topLosers.length && topLosers[0].delta < 0) {
+    html += `<br><span style="color:#5a5a5a;">Biggest contributors to the drop: ` +
+      topLosers.filter(m => m.delta < 0).map(m => `${fmtItem(m.k)} (${fmt.full(m.delta)})`).join(', ') +
+      `</span>`;
+  } else if (delta > 0 && topGainers.length && topGainers[0].delta > 0) {
+    html += `<br><span style="color:#5a5a5a;">Biggest contributors to the rise: ` +
+      topGainers.filter(m => m.delta > 0).map(m => `${fmtItem(m.k)} (+${fmt.full(m.delta)})`).join(', ') +
+      `</span>`;
+  }
+
+  banner.innerHTML = html;
+  banner.style.display = 'block';
 }
 
 function renderMiniChart() {
@@ -2427,6 +2531,7 @@ function renderAll() {
   renderDrillMonthSelectors();
   renderCoverage();
   renderDrillTable();
+  renderDrillSummary();
   renderMiniChart();
 }
 
@@ -2541,6 +2646,7 @@ function setupEventHandlers() {
     state.dd.compareMonth = e.target.value;
     saveState();
     renderDrillTable();
+    renderDrillSummary();
   });
 
   // Search box (debounced)
