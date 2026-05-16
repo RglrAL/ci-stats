@@ -694,6 +694,48 @@
   }
 
   /* Diagnostic section */
+  .diag-period-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: #fafaf6;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+  .diag-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .diag-period-picker select {
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: #fff;
+  }
+  .diag-reset-period {
+    margin-left: auto;
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .diag-reset-period:hover { color: var(--ink); border-color: var(--ink); }
+  .diag-reset-period.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
   .diag-comparison-line {
     font-size: 13px;
     color: var(--ink-soft);
@@ -1179,12 +1221,18 @@
         <h2>What's behind the numbers</h2>
         <p class="section-summary">Auto-generated findings based on the imported query &amp; page data. Identifies which specific items drive the headline metrics, estimates the "AI tax" on informational queries, and flags the AI Overview fingerprint.</p>
       </div>
-      <div class="section-actions">
-        <div class="toggle diag-mode-toggle">
-          <button class="active" data-diag-mode="auto">Auto-pick best comparison</button>
-          <button data-diag-mode="month">Use selected month</button>
-        </div>
-      </div>
+    </div>
+    <div class="diag-period-picker" id="diag-period-picker">
+      <span class="diag-label">Analyse</span>
+      <select id="diag-type">
+        <option value="queries">Queries</option>
+        <option value="pages">Pages</option>
+      </select>
+      <span class="diag-label">Compare</span>
+      <select id="diag-current"></select>
+      <span class="diag-label">against</span>
+      <select id="diag-prior"></select>
+      <button class="diag-reset-period" id="diag-reset-period" title="Reset to the recommended comparison">Auto</button>
     </div>
     <div class="diag-comparison-line" id="diag-comparison-line"></div>
     <div class="diag-findings" id="diag-findings"></div>
@@ -1315,7 +1363,10 @@ let state = {
   chartTypes: { chart1: 'auto', chart2: 'auto', chart3: 'auto' },
   activePick: null,
   diag: {
-    mode: 'auto'  // 'auto' (use selected period bookends) | 'month' (use dd month vs compare)
+    type: 'queries',     // 'queries' | 'pages'
+    current: null,       // YYYY-MM, null = auto
+    prior: null,         // YYYY-MM, null = auto
+    isAuto: true         // true = pick comparison automatically
   },
   dd: {
     type: 'queries',     // 'queries' | 'pages'
@@ -2263,29 +2314,71 @@ function isAiTriggerQuery(text) {
 // computes findings like "X% of decline from N queries", "impressions held
 // but clicks dropped" (AI Overview fingerprint), "queries that vanished", etc.
 
-function diagPickComparison() {
-  // Returns {type: 'queries'|'pages', current: 'YYYY-MM', prior: 'YYYY-MM'}
-  // or null if no viable comparison.
-  // Preference order:
-  //   1. If diag.mode === 'month' and dd has month + compareMonth → use those
-  //   2. Auto: prior-year-same-month vs latest available imported month
-  //   3. Auto: last imported vs earliest imported (within same type)
-  const tryFor = (type) => {
-    const months = sortKeys(Object.keys(dataStore[type] || {}));
-    if (months.length < 2) return null;
-    if (state.diag.mode === 'month' && state.dd.month && state.dd.compareMonth
-        && months.includes(state.dd.month) && months.includes(state.dd.compareMonth)) {
-      return { type, current: state.dd.month, prior: state.dd.compareMonth };
-    }
-    // Prior-year same month for the latest available
-    const latest = months[months.length - 1];
-    const py = priorYearKey(latest);
-    if (months.includes(py)) return { type, current: latest, prior: py };
-    // Else first vs last imported
-    return { type, current: latest, prior: months[0] };
-  };
-  return tryFor('queries') || tryFor('pages');
+function diagAutoComparison(type) {
+  // Auto-pick: prior-year-same-month vs latest, else first vs last imported.
+  const months = sortKeys(Object.keys(dataStore[type] || {}));
+  if (months.length < 2) return null;
+  const latest = months[months.length - 1];
+  const py = priorYearKey(latest);
+  if (months.includes(py)) return { current: latest, prior: py };
+  return { current: latest, prior: months[0] };
 }
+
+function diagPickComparison() {
+  // Returns {type, current, prior} or null.
+  // Honours explicit user selection; falls back to auto.
+  const type = state.diag.type;
+  const months = sortKeys(Object.keys(dataStore[type] || {}));
+  if (months.length < 2) {
+    // This type has too little data — try the other type if user hasn't picked manually
+    if (state.diag.isAuto) {
+      const otherType = type === 'queries' ? 'pages' : 'queries';
+      const auto = diagAutoComparison(otherType);
+      if (auto) return { type: otherType, current: auto.current, prior: auto.prior };
+    }
+    return null;
+  }
+  if (state.diag.isAuto || !state.diag.current || !state.diag.prior
+      || !months.includes(state.diag.current) || !months.includes(state.diag.prior)) {
+    const auto = diagAutoComparison(type);
+    if (!auto) return null;
+    return { type, current: auto.current, prior: auto.prior };
+  }
+  return { type, current: state.diag.current, prior: state.diag.prior };
+}
+
+function renderDiagPeriodPicker(activeComparison) {
+  const typeSel = document.getElementById('diag-type');
+  const curSel = document.getElementById('diag-current');
+  const priSel = document.getElementById('diag-prior');
+  const resetBtn = document.getElementById('diag-reset-period');
+  if (!typeSel || !curSel || !priSel) return;
+
+  typeSel.value = state.diag.type;
+
+  // Months available for the active type
+  const months = sortKeys(Object.keys(dataStore[state.diag.type] || {}));
+  const fill = (sel) => {
+    sel.innerHTML = '';
+    months.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m;
+      o.textContent = formatMonthLabel(m);
+      sel.appendChild(o);
+    });
+    sel.disabled = months.length < 2;
+  };
+  fill(curSel);
+  fill(priSel);
+
+  if (activeComparison && activeComparison.type === state.diag.type) {
+    curSel.value = activeComparison.current;
+    priSel.value = activeComparison.prior;
+  }
+  resetBtn.classList.toggle('active', state.diag.isAuto);
+}
+
+
 
 function diagBuildFindings(type, current, prior) {
   const curRows = dataStore[type][current] || [];
@@ -2465,8 +2558,10 @@ function renderDiagnostic() {
   if (!lineEl || !findingsEl) return;
 
   const cmp = diagPickComparison();
+  renderDiagPeriodPicker(cmp);
+
   if (!cmp) {
-    lineEl.innerHTML = '<em>Import at least two months of query or page data to see diagnostic findings.</em>';
+    lineEl.innerHTML = '<em>Import at least two months of query or page data (in admin mode) to see diagnostic findings.</em>';
     findingsEl.innerHTML = '';
     return;
   }
@@ -3245,16 +3340,54 @@ function setupEventHandlers() {
     });
   });
 
-  // Diagnostic mode toggle
-  document.querySelectorAll('.diag-mode-toggle button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.diag-mode-toggle button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.diag.mode = btn.dataset.diagMode;
+  // Diagnostic period picker
+  const diagType = document.getElementById('diag-type');
+  const diagCurrent = document.getElementById('diag-current');
+  const diagPrior = document.getElementById('diag-prior');
+  const diagReset = document.getElementById('diag-reset-period');
+  if (diagType) {
+    diagType.addEventListener('change', e => {
+      state.diag.type = e.target.value;
+      state.diag.isAuto = true;       // reset to auto when switching type
+      state.diag.current = null;
+      state.diag.prior = null;
       saveState();
       renderDiagnostic();
     });
-  });
+  }
+  if (diagCurrent) {
+    diagCurrent.addEventListener('change', e => {
+      state.diag.current = e.target.value;
+      if (!state.diag.prior) {
+        const priSel = document.getElementById('diag-prior');
+        if (priSel) state.diag.prior = priSel.value;
+      }
+      state.diag.isAuto = false;
+      saveState();
+      renderDiagnostic();
+    });
+  }
+  if (diagPrior) {
+    diagPrior.addEventListener('change', e => {
+      state.diag.prior = e.target.value;
+      if (!state.diag.current) {
+        const curSel = document.getElementById('diag-current');
+        if (curSel) state.diag.current = curSel.value;
+      }
+      state.diag.isAuto = false;
+      saveState();
+      renderDiagnostic();
+    });
+  }
+  if (diagReset) {
+    diagReset.addEventListener('click', () => {
+      state.diag.isAuto = true;
+      state.diag.current = null;
+      state.diag.prior = null;
+      saveState();
+      renderDiagnostic();
+    });
+  }
 
   // Drill-down view toggle (top vs movers)
   document.querySelectorAll('.dd-view-toggle button').forEach(btn => {
@@ -3367,10 +3500,6 @@ if (state.selected.length === 0) {
       b.classList.toggle('active', b.dataset.type === (state.chartTypes[t] || 'auto'));
     });
   }
-});
-// Diagnostic mode toggle
-document.querySelectorAll('.diag-mode-toggle button').forEach(b => {
-  b.classList.toggle('active', b.dataset.diagMode === (state.diag.mode || 'auto'));
 });
 // Drill-down type & view toggles
 document.querySelectorAll('.dd-type-toggle button').forEach(b => {
