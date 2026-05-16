@@ -61,6 +61,105 @@
     margin-bottom: 32px;
   }
 
+  /* State of play panel */
+  .sop-panel {
+    background: var(--ink);
+    border-radius: 6px;
+    padding: 24px 28px 28px;
+    margin-bottom: 32px;
+    color: #fff;
+  }
+  .sop-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .sop-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: #9a9a9a;
+    font-weight: 600;
+  }
+  .sop-month-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sop-month-label {
+    font-size: 12px;
+    color: #9a9a9a;
+  }
+  .sop-month-select {
+    background: #2c2c2c;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .sop-tiles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  @media (max-width: 720px) {
+    .sop-tiles { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 440px) {
+    .sop-tiles { grid-template-columns: 1fr; }
+  }
+  .sop-tile {
+    background: var(--ink);
+    padding: 18px 20px 20px;
+  }
+  .sop-tile-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #9a9a9a;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .sop-tile-value {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .sop-tile-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .sop-tile-trend.down { background: rgba(192,57,43,0.22); color: #ff8a7a; }
+  .sop-tile-trend.up { background: rgba(45,122,62,0.25); color: #8eda9c; }
+  .sop-tile-trend.flat { background: rgba(255,255,255,0.1); color: #b8b8b8; }
+  .sop-tile-read {
+    font-size: 12px;
+    color: #c4c4c4;
+    line-height: 1.45;
+  }
+  .sop-tile-read strong { color: #fff; font-weight: 600; }
+  .sop-tile.empty .sop-tile-value { color: #555; font-size: 22px; }
+  .sop-tile.empty .sop-tile-read { color: #777; font-style: italic; }
+
   /* Admin top bar */
   .admin-bar {
     background: var(--admin-bg);
@@ -1034,6 +1133,18 @@
   <h1 id="report-title">Audience &amp; search dashboard</h1>
   <p id="summary-text">Loading…</p>
 
+  <!-- STATE OF PLAY PANEL -->
+  <div class="sop-panel" id="sop-panel">
+    <div class="sop-head">
+      <span class="sop-title">State of play</span>
+      <span class="sop-month-wrap">
+        <span class="sop-month-label" id="sop-month-label"></span>
+        <select class="sop-month-select" id="sop-month-select"></select>
+      </span>
+    </div>
+    <div class="sop-tiles" id="sop-tiles"></div>
+  </div>
+
   <!-- DATA EDITOR (admin only) -->
   <div class="editor-section" id="data-editor">
     <h3>
@@ -1362,6 +1473,7 @@ let state = {
   modes: { chart1: 'single', chart2: 'single', chart3: 'single' },
   chartTypes: { chart1: 'auto', chart2: 'auto', chart3: 'auto' },
   activePick: null,
+  sopMonth: null,  // null = latest; otherwise YYYY-MM override
   diag: {
     type: 'queries',     // 'queries' | 'pages'
     current: null,       // YYYY-MM, null = auto
@@ -3221,7 +3333,173 @@ function parseCsvLine(line, delim) {
 }
 
 
+// =========================================================
+// STATE OF PLAY PANEL
+// =========================================================
+function renderStateOfPlay() {
+  const panel = document.getElementById('sop-panel');
+  const tilesEl = document.getElementById('sop-tiles');
+  const monthSel = document.getElementById('sop-month-select');
+  const monthLabel = document.getElementById('sop-month-label');
+  if (!panel || !tilesEl) return;
+
+  const allMonths = allKeysInData();
+  if (allMonths.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+
+  // Resolve which month to show: override or latest
+  let month = state.sopMonth && allMonths.includes(state.sopMonth)
+    ? state.sopMonth
+    : allMonths[allMonths.length - 1];
+
+  // Populate the month dropdown
+  monthSel.innerHTML = '';
+  allMonths.slice().reverse().forEach(m => {
+    const o = document.createElement('option');
+    o.value = m;
+    o.textContent = formatMonthLabel(m);
+    monthSel.appendChild(o);
+  });
+  monthSel.value = month;
+  const isLatest = month === allMonths[allMonths.length - 1];
+  monthLabel.textContent = isLatest ? 'Latest month:' : 'Showing:';
+
+  const py = priorYearKey(month);
+  const hasPrior = allMonths.includes(py);
+
+  const metricVal = (metric, m) => {
+    if (metric === 'ctr') return computeCTR(m);
+    return dataStore.metrics[metric] ? dataStore.metrics[metric][m] : null;
+  };
+  const yoyChange = (metric) => {
+    if (!hasPrior) return null;
+    const cur = metricVal(metric, month);
+    const prev = metricVal(metric, py);
+    if (cur == null || prev == null || prev === 0) return null;
+    return (cur - prev) / prev * 100;
+  };
+
+  const tiles = [];
+
+  // TILE 1: Active users
+  (() => {
+    const v = metricVal('users', month);
+    const yoy = yoyChange('users');
+    if (v == null) { tiles.push(emptyTile('Active users', 'No data for this month')); return; }
+    tiles.push(buildTile({
+      label: 'Active users',
+      value: fmt.compact(v),
+      yoy,
+      read: yoy != null
+        ? `<strong>${fmt.full(v)}</strong> people. ${yoy < 0 ? 'Down' : 'Up'} ${Math.abs(yoy).toFixed(0)}% vs ${formatMonthLabelCompact(py)} — the year-on-year view strips out seasonal swings.`
+        : `<strong>${fmt.full(v)}</strong> people visited the site this month.`
+    }));
+  })();
+
+  // TILE 2: Search clicks
+  (() => {
+    const v = metricVal('clicks', month);
+    const yoy = yoyChange('clicks');
+    if (v == null) { tiles.push(emptyTile('Search clicks', 'No data for this month')); return; }
+    tiles.push(buildTile({
+      label: 'Search clicks',
+      value: fmt.compact(v),
+      yoy,
+      read: yoy != null
+        ? `<strong>${fmt.full(v)}</strong> visits from Google. ${yoy < 0 ? 'Down' : 'Up'} ${Math.abs(yoy).toFixed(0)}% YoY${yoy < -5 ? ' — the steepest fall of the headline metrics.' : '.'}`
+        : `<strong>${fmt.full(v)}</strong> clicks came from Google search.`
+    }));
+  })();
+
+  // TILE 3: Click-through rate
+  (() => {
+    const v = metricVal('ctr', month);
+    const prev = metricVal('ctr', py);
+    if (v == null) { tiles.push(emptyTile('Click-through rate', 'Needs clicks + impressions')); return; }
+    const ppChange = (v != null && prev != null) ? v - prev : null;
+    tiles.push(buildTile({
+      label: 'Click-through rate',
+      value: fmt.pct(v, 1),
+      customTrend: ppChange != null ? {
+        cls: ppChange < 0 ? 'down' : ppChange > 0 ? 'up' : 'flat',
+        text: (ppChange >= 0 ? '+' : '') + ppChange.toFixed(1) + ' pts vs ' + formatMonthLabelCompact(py)
+      } : null,
+      read: prev != null
+        ? `Down from <strong>${fmt.pct(prev,1)}</strong> a year ago — people see the site in search but click through less often.`
+        : `Share of search impressions that turned into a visit.`
+    }));
+  })();
+
+  // TILE 4: Biggest query drop (vs prior year)
+  (() => {
+    const qMonths = sortKeys(Object.keys(dataStore.queries || {}));
+    if (!qMonths.includes(month) || !qMonths.includes(py)) {
+      tiles.push(emptyTile('Query movement', hasPrior ? 'Import query data for both months' : 'Needs prior-year query data'));
+      return;
+    }
+    const curRows = dataStore.queries[month] || [];
+    const prRows = dataStore.queries[py] || [];
+    const prMap = {}; prRows.forEach(r => { prMap[r.k] = r; });
+    let biggestLoser = null, biggestLoserDelta = 0;
+    curRows.forEach(r => {
+      const pr = prMap[r.k];
+      if (!pr || pr.c < 100) return;
+      const delta = r.c - pr.c;
+      if (delta < biggestLoserDelta) { biggestLoserDelta = delta; biggestLoser = r.k; }
+    });
+    if (!biggestLoser) {
+      tiles.push(emptyTile('Query movement', 'No notable query drops'));
+      return;
+    }
+    const shortQ = biggestLoser.length > 28 ? biggestLoser.slice(0, 28) + '…' : biggestLoser;
+    tiles.push(buildTile({
+      label: 'Biggest query drop',
+      value: '"' + shortQ + '"',
+      valueSmall: true,
+      customTrend: {
+        cls: 'down',
+        text: fmt.full(biggestLoserDelta) + ' clicks vs ' + formatMonthLabelCompact(py)
+      },
+      read: `The single query that lost the most search clicks year-on-year. Open the drill-down for the full picture.`
+    }));
+  })();
+
+  tilesEl.innerHTML = tiles.join('');
+}
+
+function buildTile({ label, value, yoy, customTrend, read, valueSmall }) {
+  let trendHtml = '';
+  if (customTrend) {
+    trendHtml = `<div class="sop-tile-trend ${customTrend.cls}">${customTrend.text}</div>`;
+  } else if (yoy != null) {
+    const cls = yoy < -1 ? 'down' : yoy > 1 ? 'up' : 'flat';
+    const arrow = yoy < -1 ? '↓' : yoy > 1 ? '↑' : '→';
+    trendHtml = `<div class="sop-tile-trend ${cls}">${arrow} ${fmt.signed(yoy)} YoY</div>`;
+  }
+  return `
+    <div class="sop-tile">
+      <div class="sop-tile-label">${label}</div>
+      <div class="sop-tile-value" ${valueSmall ? 'style="font-size:18px;"' : ''}>${value}</div>
+      ${trendHtml}
+      <div class="sop-tile-read">${read}</div>
+    </div>
+  `;
+}
+function emptyTile(label, msg) {
+  return `
+    <div class="sop-tile empty">
+      <div class="sop-tile-label">${label}</div>
+      <div class="sop-tile-value">—</div>
+      <div class="sop-tile-read">${msg}</div>
+    </div>
+  `;
+}
+
 function renderAll() {
+  renderStateOfPlay();
   renderMonthChips();
   renderQuickPicks();
   renderSummary();
@@ -3339,6 +3617,18 @@ function setupEventHandlers() {
       renderAll();
     });
   });
+
+  // State of play month override
+  const sopMonthSelect = document.getElementById('sop-month-select');
+  if (sopMonthSelect) {
+    sopMonthSelect.addEventListener('change', e => {
+      const allMonths = allKeysInData();
+      // If they picked the latest month, treat as "auto" (null)
+      state.sopMonth = (e.target.value === allMonths[allMonths.length - 1]) ? null : e.target.value;
+      saveState();
+      renderStateOfPlay();
+    });
+  }
 
   // Diagnostic period picker
   const diagType = document.getElementById('diag-type');
