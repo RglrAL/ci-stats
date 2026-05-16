@@ -693,6 +693,173 @@
     font-style: italic;
   }
 
+  /* Diagnostic section */
+  .diag-comparison-line {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: #fafaf6;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary);
+  }
+  .diag-comparison-line .delta-down { color: var(--accent); font-weight: 600; }
+  .diag-comparison-line .delta-up { color: var(--positive); font-weight: 600; }
+  .diag-comparison-line strong { color: var(--ink); }
+
+  .diag-findings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 720px) { .diag-findings { grid-template-columns: 1fr; } }
+
+  .diag-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+  .diag-card.full-width { grid-column: 1 / -1; }
+  .diag-card.highlight {
+    background: #fff8e7;
+    border-color: #e8d8a8;
+  }
+  .diag-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+  .diag-card h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--ink);
+    flex: 1;
+  }
+  .diag-card .diag-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-faint);
+    padding: 3px 8px;
+    background: #f0eee5;
+    border-radius: 3px;
+    font-weight: 500;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .diag-card .diag-tag.alert {
+    background: #f8e6d6;
+    color: #8c4a1a;
+  }
+  .diag-card .diag-desc {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .diag-card .diag-desc strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .diag-card .diag-headline {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .diag-card .diag-headline.down { color: var(--accent); }
+  .diag-card .diag-headline.up { color: var(--positive); }
+  .diag-card .diag-headline-sub {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .diag-list {
+    list-style: none;
+    margin: 0; padding: 0;
+    font-size: 13px;
+  }
+  .diag-list li {
+    padding: 7px 0;
+    border-bottom: 1px solid #f0eee5;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .diag-list li:hover { background: #fafaf6; }
+  .diag-list li:last-child { border-bottom: none; }
+  .diag-list .diag-item-text {
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .diag-list .diag-item-meta {
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .diag-list .diag-item-meta.up { color: var(--positive); }
+  .diag-list .diag-item-meta.flat { color: var(--ink-faint); font-weight: normal; }
+  .diag-list .diag-item-meta small { color: var(--ink-faint); font-weight: normal; }
+  .diag-view-all {
+    margin-top: 10px;
+    display: inline-block;
+    font-size: 12px;
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+  }
+  .diag-view-all:hover { color: var(--ink); }
+
+  .diag-empty {
+    grid-column: 1 / -1;
+    padding: 30px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-style: italic;
+    background: #fafaf6;
+    border-radius: 4px;
+  }
+
+  /* Concentration bar (for "70% of decline from N queries") */
+  .diag-concentration {
+    margin-top: 12px;
+  }
+  .diag-concentration-bar {
+    height: 8px;
+    background: #f0eee5;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .diag-concentration-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+  }
+  .diag-concentration-label {
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
   /* Drill-down summary banner */
   .dd-summary-banner {
     margin-top: 14px;
@@ -1004,11 +1171,30 @@
     <div class="stats" id="chart3-stats"></div>
   </section>
 
+  <!-- DIAGNOSE: What's behind the numbers -->
+  <section class="section" id="diagnose-section">
+    <div class="section-head">
+      <div class="section-title-block">
+        <div class="section-number">04 · Diagnostic</div>
+        <h2>What's behind the numbers</h2>
+        <p class="section-summary">Auto-generated findings based on the imported query &amp; page data. Identifies which specific items drive the headline metrics, estimates the "AI tax" on informational queries, and flags the AI Overview fingerprint.</p>
+      </div>
+      <div class="section-actions">
+        <div class="toggle diag-mode-toggle">
+          <button class="active" data-diag-mode="auto">Auto-pick best comparison</button>
+          <button data-diag-mode="month">Use selected month</button>
+        </div>
+      </div>
+    </div>
+    <div class="diag-comparison-line" id="diag-comparison-line"></div>
+    <div class="diag-findings" id="diag-findings"></div>
+  </section>
+
   <!-- DRILL-DOWN: Top queries & pages -->
   <section class="section" id="drilldown-section">
     <div class="section-head">
       <div class="section-title-block">
-        <div class="section-number">04 · Google Search Console</div>
+        <div class="section-number">05 · Google Search Console</div>
         <h2>Drill down</h2>
         <p class="section-summary">Top queries and pages from Google search. Click any row to see its trend over time.</p>
       </div>
@@ -1128,6 +1314,9 @@ let state = {
   modes: { chart1: 'single', chart2: 'single', chart3: 'single' },
   chartTypes: { chart1: 'auto', chart2: 'auto', chart3: 'auto' },
   activePick: null,
+  diag: {
+    mode: 'auto'  // 'auto' (use selected period bookends) | 'month' (use dd month vs compare)
+  },
   dd: {
     type: 'queries',     // 'queries' | 'pages'
     month: null,         // YYYY-MM
@@ -1180,10 +1369,12 @@ function loadState() {
     const saved = localStorage.getItem(STATE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Merge top-level keys, but keep nested defaults for dd
+      // Merge top-level keys, but keep nested defaults for dd and diag
       const ddDefaults = state.dd;
+      const diagDefaults = state.diag;
       state = Object.assign(state, parsed);
       state.dd = Object.assign({}, ddDefaults, parsed.dd || {});
+      state.diag = Object.assign({}, diagDefaults, parsed.diag || {});
     }
   } catch(e) {}
 }
@@ -2050,8 +2241,444 @@ function downloadChartPNG(chartId) {
 }
 
 // =========================================================
-// DRILL-DOWN
+// DIAGNOSTIC: What's behind the numbers
 // =========================================================
+// AI-triggering query classifier. These query shapes correlate strongly with
+// Google showing an AI Overview (informational / conversational / comparative
+// intent). Used to estimate the "AI tax" — how much faster CTR is falling for
+// these queries vs the rest. This is a heuristic, not a direct GSC measurement.
+const AI_TRIGGER_PATTERN = new RegExp(
+  '\\b(how|what|whats|why|when|where|who|which|can|could|should|does|do|is|are|will)\\b' +
+  '|\\b(vs|versus|compare|comparison|difference|differences)\\b' +
+  '|\\b(guide|overview|explain|explained|meaning|definition|define)\\b' +
+  '|\\b(best|top|cheapest|easiest)\\b' +
+  '|\\b(eligibility|eligible|qualify|entitled|entitlement)\\b',
+  'i'
+);
+function isAiTriggerQuery(text) {
+  return AI_TRIGGER_PATTERN.test(text);
+}
+
+// Picks the best comparison pair available in the imported data,
+// computes findings like "X% of decline from N queries", "impressions held
+// but clicks dropped" (AI Overview fingerprint), "queries that vanished", etc.
+
+function diagPickComparison() {
+  // Returns {type: 'queries'|'pages', current: 'YYYY-MM', prior: 'YYYY-MM'}
+  // or null if no viable comparison.
+  // Preference order:
+  //   1. If diag.mode === 'month' and dd has month + compareMonth → use those
+  //   2. Auto: prior-year-same-month vs latest available imported month
+  //   3. Auto: last imported vs earliest imported (within same type)
+  const tryFor = (type) => {
+    const months = sortKeys(Object.keys(dataStore[type] || {}));
+    if (months.length < 2) return null;
+    if (state.diag.mode === 'month' && state.dd.month && state.dd.compareMonth
+        && months.includes(state.dd.month) && months.includes(state.dd.compareMonth)) {
+      return { type, current: state.dd.month, prior: state.dd.compareMonth };
+    }
+    // Prior-year same month for the latest available
+    const latest = months[months.length - 1];
+    const py = priorYearKey(latest);
+    if (months.includes(py)) return { type, current: latest, prior: py };
+    // Else first vs last imported
+    return { type, current: latest, prior: months[0] };
+  };
+  return tryFor('queries') || tryFor('pages');
+}
+
+function diagBuildFindings(type, current, prior) {
+  const curRows = dataStore[type][current] || [];
+  const prRows = dataStore[type][prior] || [];
+  const curMap = {};  curRows.forEach(r => { curMap[r.k] = r; });
+  const prMap = {};   prRows.forEach(r => { prMap[r.k] = r; });
+
+  const allKeys = new Set([...Object.keys(curMap), ...Object.keys(prMap)]);
+
+  // Build a row-per-item with deltas
+  const items = [];
+  allKeys.forEach(k => {
+    const cur = curMap[k];
+    const pr  = prMap[k];
+    const curC = cur ? cur.c : 0;
+    const curI = cur ? cur.i : 0;
+    const prC  = pr ? pr.c : 0;
+    const prI  = pr ? pr.i : 0;
+    items.push({
+      k, curC, curI, prC, prI,
+      dC: curC - prC,
+      dI: curI - prI,
+      pctC: prC > 0 ? (curC - prC) / prC * 100 : null,
+      pctI: prI > 0 ? (curI - prI) / prI * 100 : null,
+      curCTR: curI > 0 ? curC / curI * 100 : null,
+      prCTR: prI > 0 ? prC / prI * 100 : null,
+    });
+  });
+
+  const totalCurC = items.reduce((a,x) => a + x.curC, 0);
+  const totalPrC = items.reduce((a,x) => a + x.prC, 0);
+  const totalDelta = totalCurC - totalPrC;
+  const overallPct = totalPrC > 0 ? totalDelta / totalPrC * 100 : 0;
+
+  // FINDING 1: Concentration of decline
+  // What % of click loss came from the top N items?
+  let concentrationFinding = null;
+  const losers = items.filter(x => x.dC < 0).sort((a,b) => a.dC - b.dC);
+  if (totalDelta < 0 && losers.length > 0) {
+    const totalLost = losers.reduce((a,x) => a + (-x.dC), 0);
+    // Find N where cumulative reaches 70% of lost clicks
+    let cum = 0, n70 = 0;
+    for (let i = 0; i < losers.length; i++) {
+      cum += -losers[i].dC;
+      if (cum >= totalLost * 0.7) { n70 = i + 1; break; }
+    }
+    if (n70 === 0) n70 = losers.length;
+    concentrationFinding = {
+      pctOfLoss: 70,
+      nItems: n70,
+      totalLost,
+      totalLosers: losers.length,
+      topN: losers.slice(0, 5)
+    };
+  }
+
+  // FINDING 2: AI Overview fingerprint — impressions held but clicks dropped
+  // Heuristic: impressions within ±15% of prior, clicks dropped ≥20% AND ≥100 absolute
+  const aiSignature = items.filter(x => {
+    if (x.prC < 100 || x.dC > -100) return false;
+    if (x.pctC == null || x.pctC > -20) return false;
+    if (x.pctI == null) return false;
+    return x.pctI > -15 && x.pctI < 15;
+  }).sort((a,b) => a.dC - b.dC);
+  const aiClicksLost = aiSignature.reduce((a,x) => a + (-x.dC), 0);
+  const aiShareOfLoss = totalDelta < 0 ? aiClicksLost / Math.abs(totalDelta) * 100 : 0;
+
+  // FINDING 3: Queries/pages that vanished
+  // Items with ≥500 prior clicks but ≤10 current clicks
+  const vanished = items.filter(x => x.prC >= 500 && x.curC <= 10).sort((a,b) => b.prC - a.prC);
+  const vanishedClicksLost = vanished.reduce((a,x) => a + (-x.dC), 0);
+
+  // FINDING 4: New / rising stars (positive — for balance)
+  // Items where current clicks ≥ 500 and either no prior or ≥ 100% growth
+  const risers = items.filter(x => x.curC >= 500 && (x.prC === 0 || (x.pctC != null && x.pctC >= 100)))
+    .sort((a,b) => b.dC - a.dC);
+  const risersClicksGained = risers.reduce((a,x) => a + x.dC, 0);
+
+  // FINDING 5: Position drops — items whose Google position got worse
+  // Need position data. Items where prior position was ≤10 and current is ≥3 positions worse
+  const positionDrops = items.filter(x => {
+    if (!curMap[x.k] || !prMap[x.k]) return false;
+    const pCur = curMap[x.k].p;
+    const pPr = prMap[x.k].p;
+    if (pPr > 10 || pPr === 0) return false;
+    return (pCur - pPr) >= 3 && x.dC <= -50;
+  }).sort((a,b) => (curMap[a.k].p - prMap[a.k].p) - (curMap[b.k].p - prMap[b.k].p)).reverse();
+
+  // FINDING 6: The "AI tax" — only meaningful for queries, and only as a
+  // time comparison. Splits queries into AI-triggering vs the rest, and
+  // compares how CTR moved for each group between prior and current.
+  let aiTax = null;
+  if (type === 'queries') {
+    const aiCur = { c: 0, i: 0 }, aiPr = { c: 0, i: 0 };
+    const otherCur = { c: 0, i: 0 }, otherPr = { c: 0, i: 0 };
+    curRows.forEach(r => {
+      const bucket = isAiTriggerQuery(r.k) ? aiCur : otherCur;
+      bucket.c += r.c; bucket.i += r.i;
+    });
+    prRows.forEach(r => {
+      const bucket = isAiTriggerQuery(r.k) ? aiPr : otherPr;
+      bucket.c += r.c; bucket.i += r.i;
+    });
+    const ctr = b => b.i > 0 ? b.c / b.i * 100 : null;
+    const aiCtrCur = ctr(aiCur), aiCtrPr = ctr(aiPr);
+    const otherCtrCur = ctr(otherCur), otherCtrPr = ctr(otherPr);
+    if (aiCtrCur != null && aiCtrPr != null && otherCtrCur != null && otherCtrPr != null) {
+      const aiCtrChange = (aiCtrCur - aiCtrPr) / aiCtrPr * 100;
+      const otherCtrChange = (otherCtrCur - otherCtrPr) / otherCtrPr * 100;
+      aiTax = {
+        aiCtrCur, aiCtrPr, aiCtrChange,
+        otherCtrCur, otherCtrPr, otherCtrChange,
+        // The "tax" is the gap: how much MORE CTR fell for AI-triggering queries
+        gap: aiCtrChange - otherCtrChange,
+        aiQueryCount: curRows.filter(r => isAiTriggerQuery(r.k)).length,
+        aiClicksCur: aiCur.c,
+        aiClicksPr: aiPr.c
+      };
+    }
+  }
+
+  return {
+    type, current, prior,
+    totalCurC, totalPrC, totalDelta, overallPct,
+    concentration: concentrationFinding,
+    aiSignature, aiClicksLost, aiShareOfLoss,
+    vanished, vanishedClicksLost,
+    risers, risersClicksGained,
+    positionDrops,
+    aiTax,
+    curMap, prMap
+  };
+}
+
+function diagRenderItemList(items, fmtMeta, isUrl, max = 5) {
+  if (items.length === 0) return '';
+  let html = '<ul class="diag-list">';
+  items.slice(0, max).forEach(x => {
+    const display = isUrl ? (x.k.startsWith('/') ? x.k : x.k) : x.k;
+    const shortText = display.length > 50 ? display.slice(0, 50) + '…' : display;
+    html += `<li data-key="${encodeURIComponent(x.k)}">
+      <span class="diag-item-text" title="${display}">${shortText}</span>
+      <span class="${fmtMeta(x).cls}">${fmtMeta(x).html}</span>
+    </li>`;
+  });
+  html += '</ul>';
+  return html;
+}
+
+function diagViewInTable(type, kind, options = {}) {
+  // Switches drill-down to show specific filtered view
+  state.dd.type = type;
+  if (options.month) state.dd.month = options.month;
+  if (options.compareMonth) state.dd.compareMonth = options.compareMonth;
+  if (kind === 'movers') {
+    state.dd.view = 'movers';
+    state.dd.sortKey = 'absChange';
+    state.dd.sortDir = 'desc';
+  } else if (kind === 'top') {
+    state.dd.view = 'top';
+    state.dd.sortKey = 'c';
+    state.dd.sortDir = 'desc';
+  }
+  state.dd.search = options.search || '';
+  saveState();
+  renderAll();
+  // Scroll to drill-down
+  setTimeout(() => {
+    const el = document.getElementById('drilldown-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
+}
+
+function renderDiagnostic() {
+  const lineEl = document.getElementById('diag-comparison-line');
+  const findingsEl = document.getElementById('diag-findings');
+  if (!lineEl || !findingsEl) return;
+
+  const cmp = diagPickComparison();
+  if (!cmp) {
+    lineEl.innerHTML = '<em>Import at least two months of query or page data to see diagnostic findings.</em>';
+    findingsEl.innerHTML = '';
+    return;
+  }
+
+  const f = diagBuildFindings(cmp.type, cmp.current, cmp.prior);
+  const isUrl = cmp.type === 'pages';
+  const typeLabel = cmp.type === 'queries' ? 'queries' : 'pages';
+
+  // Comparison line
+  const isYoY = parseMonth(cmp.current).year > parseMonth(cmp.prior).year;
+  const cmpLabel = isYoY ? 'year-on-year' : 'within period';
+  const deltaSign = f.totalDelta >= 0 ? '+' : '';
+  const deltaClass = f.totalDelta < 0 ? 'delta-down' : 'delta-up';
+  lineEl.innerHTML = `
+    Comparing <strong>${formatMonthLabel(cmp.current)}</strong> vs <strong>${formatMonthLabel(cmp.prior)}</strong> (${cmpLabel}) ·
+    total clicks across top ${typeLabel}:
+    <span class="${deltaClass}">${deltaSign}${fmt.full(f.totalDelta)} (${fmt.signed(f.overallPct)})</span>
+  `;
+
+  // Build findings cards
+  let cards = [];
+
+  // CARD 1: Concentration
+  if (f.concentration) {
+    const c = f.concentration;
+    const isHighlyConcentrated = c.nItems <= 50;
+    const concentrationPct = (c.totalLost > 0 && c.totalLosers > 0) ? Math.round(c.nItems / c.totalLosers * 100) : 0;
+    cards.push(`
+      <div class="diag-card ${isHighlyConcentrated ? 'highlight' : ''}">
+        <div class="diag-card-head">
+          <h4>Concentration of the decline</h4>
+          <span class="diag-tag ${isHighlyConcentrated ? 'alert' : ''}">${isHighlyConcentrated ? 'Concentrated' : 'Spread out'}</span>
+        </div>
+        <div class="diag-headline down">${c.nItems} ${typeLabel}</div>
+        <div class="diag-headline-sub">drove 70% of the ${fmt.full(c.totalLost)}-click decline (out of ${c.totalLosers} declining ${typeLabel} total).</div>
+        <div class="diag-concentration">
+          <div class="diag-concentration-bar"><div class="diag-concentration-fill" style="width: ${concentrationPct}%;"></div></div>
+          <div class="diag-concentration-label">Concentrated in ~${concentrationPct}% of declining ${typeLabel}. ${isHighlyConcentrated ? 'Targeted action on these could recover most of the loss.' : 'The drop is broad — likely structural rather than item-specific.'}</div>
+        </div>
+        <div style="margin-top:14px;">
+          <strong style="font-size:12px; color:#5a5a5a; text-transform:uppercase; letter-spacing:0.1em;">Top contributors</strong>
+          ${diagRenderItemList(c.topN, x => ({ cls: 'diag-item-meta', html: fmt.full(x.dC) + ' <small>(' + fmt.signed(x.pctC || 0) + ')</small>' }), isUrl)}
+        </div>
+        <button class="diag-view-all" data-action="view-movers">View all in drill-down →</button>
+      </div>
+    `);
+  }
+
+  // CARD 2: AI Overview fingerprint
+  const aiHasSignal = f.aiSignature.length >= 3;
+  cards.push(`
+    <div class="diag-card ${aiHasSignal ? 'highlight' : ''}">
+      <div class="diag-card-head">
+        <h4>Impressions held, clicks dropped <span style="font-weight:400; color:#7a7565;">— the AI Overview fingerprint</span></h4>
+        <span class="diag-tag ${aiHasSignal ? 'alert' : ''}">${aiHasSignal ? 'Likely impact' : 'Limited signal'}</span>
+      </div>
+      <div class="diag-desc">
+        ${typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1)} where impressions stayed within ±15% but clicks fell ≥20%.
+        This is the pattern when Google answers the question in the AI Overview without users needing to click through.
+      </div>
+      ${aiHasSignal ? `
+        <div class="diag-headline down">${f.aiSignature.length} ${typeLabel}</div>
+        <div class="diag-headline-sub">accounting for <strong style="color:var(--accent);">${fmt.full(f.aiClicksLost)}</strong> lost clicks (${f.aiShareOfLoss.toFixed(0)}% of the total decline).</div>
+        ${diagRenderItemList(f.aiSignature, x => ({ cls: 'diag-item-meta', html: fmt.full(x.dC) + ' <small>(impr ' + fmt.signed(x.pctI || 0) + ', clicks ' + fmt.signed(x.pctC || 0) + ')</small>' }), isUrl)}
+        <button class="diag-view-all" data-action="view-ai">View all in drill-down →</button>
+      ` : `
+        <div class="diag-desc" style="font-style: italic; color: var(--ink-faint);">
+          Only ${f.aiSignature.length} ${typeLabel} match this pattern at the threshold — the click loss is more likely driven by ranking changes or queries vanishing, not AI Overviews.
+        </div>
+      `}
+    </div>
+  `);
+
+  // CARD 2b: The "AI tax" — CTR trend for AI-triggering queries vs the rest
+  if (f.aiTax) {
+    const t = f.aiTax;
+    const hasTax = t.gap < -3; // AI queries' CTR fell ≥3pp more than others
+    const gapAbs = Math.abs(t.gap).toFixed(0);
+    cards.push(`
+      <div class="diag-card ${hasTax ? 'highlight' : ''}">
+        <div class="diag-card-head">
+          <h4>The "AI tax" on informational queries</h4>
+          <span class="diag-tag ${hasTax ? 'alert' : ''}">${hasTax ? 'Tax detected' : 'No clear tax'}</span>
+        </div>
+        <div class="diag-desc">
+          Splits queries into <strong>AI-triggering</strong> (how/what/why, comparisons, eligibility — the kind Google answers with an AI Overview)
+          versus all others, and compares how CTR moved between ${formatMonthLabelCompact(f.prior)} and ${formatMonthLabelCompact(f.current)}.
+          Identified ${t.aiQueryCount} AI-triggering queries.
+        </div>
+        ${hasTax ? `
+          <div class="diag-headline down">${gapAbs}% AI tax</div>
+          <div class="diag-headline-sub">CTR on AI-triggering queries fell <strong style="color:var(--accent);">${fmt.signed(t.aiCtrChange)}</strong> versus <strong>${fmt.signed(t.otherCtrChange)}</strong> for everything else — a ${gapAbs}-point wider drop.</div>
+        ` : `
+          <div class="diag-headline-sub" style="margin-bottom:14px;">
+            CTR on AI-triggering queries moved ${fmt.signed(t.aiCtrChange)} versus ${fmt.signed(t.otherCtrChange)} for others.
+            ${t.gap < 0 ? 'A small gap, but not large enough to call a clear AI tax.' : 'AI-triggering queries actually held up as well or better — no AI tax in this period.'}
+          </div>
+        `}
+        <ul class="diag-list">
+          <li style="cursor:default;">
+            <span class="diag-item-text">AI-triggering queries — CTR</span>
+            <span class="diag-item-meta ${t.aiCtrChange < 0 ? '' : 'up'}">${fmt.pct(t.aiCtrPr,1)} → ${fmt.pct(t.aiCtrCur,1)} <small>(${fmt.signed(t.aiCtrChange)})</small></span>
+          </li>
+          <li style="cursor:default;">
+            <span class="diag-item-text">All other queries — CTR</span>
+            <span class="diag-item-meta ${t.otherCtrChange < 0 ? '' : 'up'}">${fmt.pct(t.otherCtrPr,1)} → ${fmt.pct(t.otherCtrCur,1)} <small>(${fmt.signed(t.otherCtrChange)})</small></span>
+          </li>
+        </ul>
+        <div class="diag-desc" style="margin-top:12px; font-size:12px; font-style:italic; color:var(--ink-faint);">
+          Heuristic estimate. Google Search Console does not report AI Overview impressions directly, so this infers impact from query intent. Treat as indicative, not exact.
+        </div>
+      </div>
+    `);
+  }
+
+
+  if (f.vanished.length > 0) {
+    cards.push(`
+      <div class="diag-card">
+        <div class="diag-card-head">
+          <h4>${typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1)} that dropped off</h4>
+          <span class="diag-tag">Lost rankings</span>
+        </div>
+        <div class="diag-desc">
+          ${typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1)} that had ≥500 clicks in ${formatMonthLabelCompact(cmp.prior)} but ≤10 in ${formatMonthLabelCompact(cmp.current)}.
+          Worth checking for de-indexed pages, broken links, or competitors taking the position.
+        </div>
+        ${f.vanished.length > 0 ? `
+          <div class="diag-headline down">${f.vanished.length} ${f.vanished.length === 1 ? 'item' : 'items'}</div>
+          <div class="diag-headline-sub">representing <strong style="color:var(--accent);">${fmt.full(f.vanishedClicksLost)}</strong> lost clicks.</div>
+          ${diagRenderItemList(f.vanished, x => ({ cls: 'diag-item-meta', html: '−' + fmt.full(x.prC) + ' <small>→ ' + fmt.full(x.curC) + '</small>' }), isUrl)}
+        ` : `<div class="diag-desc" style="font-style: italic; color: var(--ink-faint);">No items dropped off completely. The decline is gradual, not a sudden loss.</div>`}
+      </div>
+    `);
+  }
+
+  // CARD 4: Position drops (only if we have data and findings)
+  if (f.positionDrops.length > 0) {
+    cards.push(`
+      <div class="diag-card">
+        <div class="diag-card-head">
+          <h4>${typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1)} that lost ranking position</h4>
+          <span class="diag-tag">Position</span>
+        </div>
+        <div class="diag-desc">
+          ${typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1)} that were ranking in the top 10 and slipped by ≥3 positions, losing ≥50 clicks.
+        </div>
+        <div class="diag-headline down">${f.positionDrops.length} ${typeLabel}</div>
+        <div class="diag-headline-sub">moved down significantly in Google search.</div>
+        ${diagRenderItemList(f.positionDrops.slice(0, 5), x => ({
+          cls: 'diag-item-meta',
+          html: 'pos ' + f.prMap[x.k].p.toFixed(1) + ' → ' + f.curMap[x.k].p.toFixed(1) + ' <small>(' + fmt.full(x.dC) + ')</small>'
+        }), isUrl)}
+      </div>
+    `);
+  }
+
+  // CARD 5: Risers (positive balance card)
+  if (f.risers.length > 0) {
+    cards.push(`
+      <div class="diag-card">
+        <div class="diag-card-head">
+          <h4>${typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1)} that grew</h4>
+          <span class="diag-tag">Bright spots</span>
+        </div>
+        <div class="diag-desc">
+          ${typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1)} with ≥500 current clicks that either doubled vs ${formatMonthLabelCompact(cmp.prior)} or are new.
+        </div>
+        <div class="diag-headline up">+${fmt.full(f.risersClicksGained)}</div>
+        <div class="diag-headline-sub">total clicks gained across ${f.risers.length} growing ${typeLabel}.</div>
+        ${diagRenderItemList(f.risers, x => ({
+          cls: 'diag-item-meta up',
+          html: '+' + fmt.full(x.dC) + ' <small>' + (x.prC === 0 ? '(new)' : '(' + fmt.signed(x.pctC || 0) + ')') + '</small>'
+        }), isUrl)}
+      </div>
+    `);
+  }
+
+  findingsEl.innerHTML = cards.length > 0 ? cards.join('') :
+    '<div class="diag-empty">No notable findings at the current thresholds — the data is too sparse or the changes are small.</div>';
+
+  // Wire up "view all" buttons
+  findingsEl.querySelectorAll('.diag-view-all').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'view-movers') {
+        diagViewInTable(cmp.type, 'movers', { month: cmp.current, compareMonth: cmp.prior });
+      } else if (action === 'view-ai') {
+        // For "view AI signature" we don't have a filter for that exact pattern,
+        // so jump to movers — same data, slightly different sort
+        diagViewInTable(cmp.type, 'movers', { month: cmp.current, compareMonth: cmp.prior });
+      }
+    });
+  });
+
+  // Wire up item clicks → open in drill-down
+  findingsEl.querySelectorAll('.diag-list li[data-key]').forEach(li => {
+    li.addEventListener('click', () => {
+      const k = decodeURIComponent(li.dataset.key);
+      diagViewInTable(cmp.type, 'top', { month: cmp.current, compareMonth: cmp.prior, search: k.slice(0, 30) });
+      state.dd.selectedItem = k;
+      saveState();
+      renderAll();
+      setTimeout(() => {
+        const c = document.getElementById('dd-mini-chart');
+        if (c && c.style.display !== 'none') c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+    });
+  });
+}
+
+
 const PAGE_PREFIX = 'https://www.citizensinformation.ie';
 
 function drillData() {
@@ -2527,7 +3154,8 @@ function renderAll() {
     renderAnnotationList();
     renderDrillExisting();
   }
-  // Drill-down section (visible to all)
+  // Diagnostic + drill-down section (visible to all)
+  renderDiagnostic();
   renderDrillMonthSelectors();
   renderCoverage();
   renderDrillTable();
@@ -2614,6 +3242,17 @@ function setupEventHandlers() {
       state.dd.sortDir = 'desc';
       saveState();
       renderAll();
+    });
+  });
+
+  // Diagnostic mode toggle
+  document.querySelectorAll('.diag-mode-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.diag-mode-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.diag.mode = btn.dataset.diagMode;
+      saveState();
+      renderDiagnostic();
     });
   });
 
@@ -2728,6 +3367,17 @@ if (state.selected.length === 0) {
       b.classList.toggle('active', b.dataset.type === (state.chartTypes[t] || 'auto'));
     });
   }
+});
+// Diagnostic mode toggle
+document.querySelectorAll('.diag-mode-toggle button').forEach(b => {
+  b.classList.toggle('active', b.dataset.diagMode === (state.diag.mode || 'auto'));
+});
+// Drill-down type & view toggles
+document.querySelectorAll('.dd-type-toggle button').forEach(b => {
+  b.classList.toggle('active', b.dataset.ddType === state.dd.type);
+});
+document.querySelectorAll('.dd-view-toggle button').forEach(b => {
+  b.classList.toggle('active', b.dataset.ddView === state.dd.view);
 });
 
 </script>
